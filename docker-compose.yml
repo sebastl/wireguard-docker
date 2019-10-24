@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  wireguard:
+    container_name: wireguard
+    image: wireguard
+    build: .
+    restart: unless-stopped
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./config:/etc/wireguard
+    networks:
+      - net
+    ports:
+      - 5747:51820/udp
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+
+networks:
+  net:
