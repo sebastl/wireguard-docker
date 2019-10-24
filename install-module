@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 apt update
-apt install -y wireguard-dkms
+apt install -y --no-install-recommends wireguard-dkms
