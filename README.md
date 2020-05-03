@@ -7,25 +7,33 @@ This docker image and configuration is my simple version of a wireguard personal
 
 In my use case, I'm running the wireguard docker image on a free-tier Google Cloud Platform debian virtual machine and connect to it with Android, Linux, and a GL-Inet router as clients.
 
+## Build
+Using Docker Compose:
+```
+docker-compose build
+```
+
+Without Docker Compose:
+```
+docker build -t wireguard:latest .
+```
+
 ## Run
 ### First Run
 If the wireguard kernel module is not already installed on the __host__ system, use this first run command to install it:
 ```
-docker run -it --rm --cap-add sys_module -v /lib/modules:/lib/modules cmulk/wireguard-docker:buster install-module
+docker run -it --rm --cap-add sys_module -v /lib/modules:/lib/modules wireguard install-module
 ```
 
 ### Normal Run
 ```
-docker run --cap-add net_admin --cap-add sys_module -v <config volume or host dir>:/etc/wireguard -p <externalport>:<dockerport>/udp cmulk/wireguard-docker:buster
+docker-compose up
 ```
-Example:
-```
-docker run --cap-add net_admin --cap-add sys_module -v wireguard_conf:/etc/wireguard -p 5555:5555/udp cmulk/wireguard-docker:buster
-```
+
 ### Generate Keys
 This shortcut can be used to generate and display public/private key pairs to use for the server or clients
 ```
-docker run -it --rm cmulk/wireguard-docker:buster genkeys
+docker run -it --rm wireguard genkeys
 ```
 
 ## Configuration
@@ -40,6 +48,7 @@ ListenPort = 5555
 PublicKey = <client_public_key>
 AllowedIPs = 192.168.20.2
 ```
+
 Sample client configuration:
 ```
 [Interface]
@@ -53,44 +62,8 @@ Endpoint = <server_public_ip>:5555
 AllowedIPs = 0.0.0.0/0,::/0 #makes sure ALL traffic routed through VPN
 PersistentKeepalive = 25
 ```
+
 ## Other Notes
 - This Docker image also has a iptables NAT (MASQUERADE) rule already configured to make traffic through the VPN to the Internet work. This can be disabled by setting the environment varialbe IPTABLES_MASQ to 0.
 - For some clients (a GL.inet router in my case) you may have trouble with HTTPS (SSL/TLS) due to the MTU on the VPN. Ping and HTTP work fine but HTTPS does not for some sites. This can be fixed with [MSS Clamping](https://www.tldp.org/HOWTO/Adv-Routing-HOWTO/lartc.cookbook.mtu-mss.html). This is simply a checkbox in the OpenWRT Firewall settings interface.
 - This image can be used as a client as well. If you want to forward all traffic through the VPN (`AllowedIPs = 0.0.0.0/0`), you need to use the `--privileged` flag when running the container
-
-## docker-compose
-Sample docker-compose.yml
-```
-version: "2"
-services:
- vpn:
-  image: cmulk/wireguard-docker:buster
-  volumes:
-   - data:/etc/wireguard
-  networks:
-   - net
-  ports:
-   - 5555:5555/udp
-  restart: unless-stopped
-  cap_add:
-   - NET_ADMIN
-   - SYS_MODULE
-
-networks:
-  net:
-
-volumes:
- data:
-  driver: local
-```
-## Build
-Since the images are already on Docker Hub, you only need to do this if you want to change something
-```
-git clone https://github.com/cmulk/wireguard-docker.git
-cd wireguard-docker
-git checkout stretch 
-##OR##
-git checkout buster
-
-docker build -t wireguard:local .
-```
